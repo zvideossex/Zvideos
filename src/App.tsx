@@ -1,3 +1,40 @@
+import { useState, useEffect } from 'react'
+
+function AgeGate() {
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    const ageVerified = localStorage.getItem('ageVerified')
+    if (!ageVerified) setShow(true)
+  }, [])
+
+  const handleYes = () => {
+    localStorage.setItem('ageVerified', 'true')
+    setShow(false)
+  }
+
+  const handleNo = () => {
+    window.location.href = 'https://www.google.com'
+  }
+
+  if (!show) return null
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+      background: 'rgba(0,0,0,0.95)', zIndex: 9999, display: 'flex',
+      alignItems: 'center', justifyContent: 'center', color: 'white'
+    }}>
+      <div style={{ textAlign: 'center', padding: '20px' }}>
+        <h1>18+ Age Verification</h1>
+        <p>This website contains adult content. Are you 18 or older?</p>
+        <button onClick={handleYes} style={{margin: '10px', padding: '10px 30px'}}>Yes, I'm 18+</button>
+        <button onClick={handleNo} style={{margin: '10px', padding: '10px 30px'}}>No</button>
+      </div>
+    </div>
+  )
+}
+// তারপর তোমার App ফাংশনের return এর ভিতরে একদম উপরে <AgeGate /> বসায় দাও
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
