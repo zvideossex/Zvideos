@@ -14,16 +14,16 @@
   </div>
   <script type="module" src="/src/main.tsx"></script>
 
-  <!-- PopAds Code Start -->
+  <!-- PopAds Code Start - ফাইনাল ভার্সন -->
   <script type="text/javascript">
     var _pop = _pop || [];
-    _pop.push(['siteId', 1234567]); // এই নাম্বারটা তোমার হবে
-    _pop.push(['minBid', 0]);
-    _pop.push(['popundersPerIP', 0]);
-    _pop.push(['delayBetween', 0]);
+    _pop.push(['siteId', 1234567]); // <-- এখানে তোমার আসল siteId বসাবা
+    _pop.push(['minBid', 0.0001]); // 0 রাখলে লো রেট অ্যাড আসে
+    _pop.push(['popundersPerIP', 0]); // 0 = আনলিমিটেড। ইনকাম বেশি
+    _pop.push(['delayBetween', 0]); // ডিলে 0 = সাথে পপ
     _pop.push(['default', false]);
     _pop.push(['defaultPerDay', 0]);
-    _pop.push(['topmostLayer', false]);
+    _pop.push(['topmostLayer', true]); // true করলে অ্যাড সামনে আসবে, মিস হবে না
     (function() {
       var pa = document.createElement('script'); pa.type = 'text/javascript'; pa.async = true;
       pa.src = '//c1.popads.net/pop.js';
