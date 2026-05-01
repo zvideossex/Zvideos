@@ -1,0 +1,151 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+    function isValidUser(data) {
+      return data.uid == request.auth.uid 
+        && data.username is string && data.username.size() <= 50
+        && data.email is string && data.email.size() <= 100
+        && (data.avatarUrl == null || (data.avatarUrl is string && data.avatarUrl.size() <= 1000))
+        && (data.bio == null || (data.bio is string && data.bio.size() <= 1000))
+        && (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidVideo(data) {
+      return data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && data.videoUrl is string && data.videoUrl.size() <= 2000
+        && data.thumbnailUrl is string && data.thumbnailUrl.size() <= 2000
+        && (data.description == null || (data.description is string && data.description.size() <= 5000))
+        && (data.ownerName == null || (data.ownerName is string && data.ownerName.size() <= 100))
+        && (data.ownerAvatar == null || (data.ownerAvatar is string && data.ownerAvatar.size() <= 1000))
+        && data.views is number
+        && data.likesCount is number
+        && data.unlikesCount is number
+        && data.is18Plus is bool
+        && data.monetized is bool
+        && (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidInteraction(data) {
+      return data.userId == request.auth.uid
+        && data.videoId is string && isValidId(data.videoId)
+        && (data.type == 'like' || data.type == 'unlike' || data.type == null);
+    }
+
+    function isValidComment(data) {
+      return isSignedIn() && data.userId == request.auth.uid
+        && data.text is string && data.text.size() <= 1000
+        && data.username is string && data.username.size() <= 100
+        && (data.avatarUrl == null || (data.avatarUrl is string && data.avatarUrl.size() <= 1000))
+        && data.createdAt == request.time;
+    }
+
+    function isValidSubscription(data) {
+      return isSignedIn() && data.followerId == request.auth.uid
+        && data.targetId is string && isValidId(data.targetId)
+        && data.active is bool
+        && (data.createdAt == request.time || data.updatedAt == request.time);
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if true;
+      allow list: if true; // Public profiles
+      allow create: if isOwner(userId) && isValidUser(incoming())
+        && (!('earnings' in incoming()) || incoming().earnings == 0)
+        && (!('totalEarned' in incoming()) || incoming().totalEarned == 0);
+      allow update: if (isOwner(userId)
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['username', 'avatarUrl', 'bio', 'isCreator'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['earnings', 'totalEarned', 'lastPayoutDate', 'lastAutoPayoutMonth', 'monetizationStatus', 'monetizationAppliedAt', 'subscribers'])
+        ))
+      || (
+        // Allow others to update public stats and earnings (on view)
+        isSignedIn() && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['subscribers', 'earnings', 'totalEarned'])
+          && (incoming().subscribers == null || incoming().subscribers is number)
+          && (incoming().earnings == null || incoming().earnings is number)
+          && (incoming().totalEarned == null || incoming().totalEarned is number)
+        )
+      );
+    }
+
+    match /videos/{videoId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isValidVideo(incoming()) && isValidId(videoId);
+      allow update: if (
+        isOwner(existing().ownerId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'thumbnailUrl', 'is18Plus', 'monetized'])
+          // Partial validation here if needed, but simple isOwner is often enough for owner updates
+        )
+      ) || (
+        // Public/User updates (views, counts)
+        incoming().diff(existing()).affectedKeys().hasOnly(['views', 'likesCount', 'unlikesCount'])
+        && incoming().views is number
+        && incoming().likesCount is number
+        && incoming().unlikesCount is number
+      );
+      allow delete: if isOwner(existing().ownerId);
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isValidComment(incoming());
+        allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/videos/$(videoId)).data.ownerId == request.auth.uid);
+      }
+    }
+
+    match /interactions/{interactionId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isValidInteraction(incoming()) && interactionId == request.auth.uid + '_' + incoming().videoId;
+      allow update: if isOwner(existing().userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['type', 'updatedAt'])
+      );
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /subscriptions/{subId} {
+      allow get: if true;
+      allow list: if isSignedIn();
+      allow create: if isValidSubscription(incoming()) && subId == request.auth.uid + '_' + incoming().targetId;
+      allow update: if isOwner(existing().followerId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['active', 'updatedAt'])
+      );
+      allow delete: if isOwner(existing().followerId);
+    }
+
+    match /stats/global {
+      allow get: if true;
+      allow write: if isSignedIn(); // System writes
+    }
+  }
+}

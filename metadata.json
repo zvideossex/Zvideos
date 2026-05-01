@@ -1,0 +1,6 @@
+{
+  "name": "zvideos",
+  "description": "A premium video sharing platform for creators, featuring secure uploads, user accounts, and monetization.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": []
+}

@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "username": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "isCreator": { "type": "boolean" },
+        "bio": { "type": "string" },
+        "earnings": { "type": "number", "description": "Current balance" },
+        "totalEarned": { "type": "number" },
+        "monetizationStatus": { "type": "string", "enum": ["unapplied", "pending", "approved", "rejected"] },
+        "monetizationAppliedAt": { "type": "string", "format": "date-time" },
+        "lastPayoutDate": { "type": "string", "format": "date-time" },
+        "lastAutoPayoutMonth": { "type": "string", "description": "Format: YYYY-MM" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "username", "createdAt"]
+    },
+    "Video": {
+      "title": "Video Content",
+      "description": "A video uploaded by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "views": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "unlikesCount": { "type": "number" },
+        "is18Plus": { "type": "boolean" },
+        "monetized": { "type": "boolean" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerId", "title", "videoUrl", "createdAt"]
+    },
+    "Interaction": {
+      "title": "User Interaction",
+      "description": "Likes and unlikes on videos.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "videoId": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "unlike"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "videoId", "type", "createdAt"]
+    },
+    "Comment": {
+      "title": "Video Comment",
+      "description": "Text interaction on a video.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "text", "createdAt"]
+    },
+    "Subscription": {
+      "title": "User Subscription",
+      "description": "Follow/Subscribe relationship between users.",
+      "type": "object",
+      "properties": {
+        "followerId": { "type": "string" },
+        "targetId": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["followerId", "targetId", "active", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/videos/{videoId}": {
+      "schema": "Video",
+      "description": "Main video collection"
+    },
+    "/videos/{videoId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments nested under videos"
+    },
+    "/interactions/{interactionId}": {
+      "schema": "Interaction",
+      "description": "Like/Unlike records"
+    },
+    "/subscriptions/{subId}": {
+      "schema": "Subscription",
+      "description": "User subscription/follow records"
+    }
+  }
+}
