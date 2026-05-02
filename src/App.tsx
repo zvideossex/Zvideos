@@ -1,5 +1,28 @@
 import { useState, useEffect } from 'react'
+import { Navbar } from './components/layout/Navbar';
+import { Sidebar } from './components/layout/Sidebar';
+import { VideoCard, VideoData } from './components/video/VideoCard';
+import { VideoUpload } from './components/video/VideoUpload';
+import { VideoPlayer } from './components/video/VideoPlayer';
+import { CreatorDashboard } from './components/creator/CreatorDashboard';
+import { ProfileView } from './components/ProfileView';
+import { AuthProvider, useAuth } from './AuthContext';
+import { collection, query, orderBy, onSnapshot, limit, where, updateDoc, doc } from 'firebase/firestore';
+import { db } from './lib/firebase';
+import { handleFirestoreError, OperationType } from './lib/firestoreErrorHandler';
+import { motion, AnimatePresence } from 'motion/react';
+import { Loader2, ShieldCheck, Zap } from 'lucide-react';
+import { SettingsModal } from './components/modals/SettingsModal';
+import { SupportModal } from './components/modals/SupportModal';
+import {
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile
+} from "firebase/auth"
+import { auth, provider } from './lib/firebase';
 
+// AgeGate Component
 function AgeGate() {
   const [show, setShow] = useState(false)
 
@@ -25,33 +48,156 @@ function AgeGate() {
       background: 'rgba(0,0,0,0.95)', zIndex: 9999, display: 'flex',
       alignItems: 'center', justifyContent: 'center', color: 'white'
     }}>
-      <div style={{ textAlign: 'center', padding: '20px' }}>
-        <h1>18+ Age Verification</h1>
-        <p>This website contains adult content. Are you 18 or older?</p>
-        <button onClick={handleYes} style={{margin: '10px', padding: '10px 30px'}}>Yes, I'm 18+</button>
-        <button onClick={handleNo} style={{margin: '10px', padding: '10px 30px'}}>No</button>
+      <div style={{ textAlign: 'center', padding: '20px', maxWidth: '500px' }}>
+        <h1 style={{fontSize: '32px', marginBottom: '20px'}}>18+ Age Verification</h1>
+        <p style={{marginBottom: '30px', fontSize: '16px', lineHeight: '1.6'}}>
+          This website contains adult content. You must be 18 years or older to enter.
+        </p>
+        <button onClick={handleYes} style={{
+          margin: '10px', padding: '12px 40px', fontSize: '16px',
+          background: '#ea580c', border: 'none', color: 'white',
+          borderRadius: '8px', cursor: 'pointer'
+        }}>Yes, I'm 18+</button>
+        <button onClick={handleNo} style={{
+          margin: '10px', padding: '12px 40px', fontSize: '16px',
+          background: '#333', border: 'none', color: 'white',
+          borderRadius: '8px', cursor: 'pointer'
+        }}>No, Exit</button>
       </div>
     </div>
   )
 }
-// তারপর তোমার App ফাংশনের return এর ভিতরে একদম উপরে <AgeGate /> বসায় দাও
-import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/layout/Navbar';
-import { Sidebar } from './components/layout/Sidebar';
-import { VideoCard, VideoData } from './components/video/VideoCard';
-import { VideoUpload } from './components/video/VideoUpload';
-import { VideoPlayer } from './components/video/VideoPlayer';
-import { CreatorDashboard } from './components/creator/CreatorDashboard';
-import { ProfileView } from './components/ProfileView';
-import { AuthProvider, useAuth } from './AuthContext';
-import { collection, query, orderBy, onSnapshot, limit, where, updateDoc, doc } from 'firebase/firestore';
-import { db } from './lib/firebase';
-import { handleFirestoreError, OperationType } from './lib/firestoreErrorHandler';
-import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, ShieldCheck, Zap } from 'lucide-react';
 
-import { SettingsModal } from './components/modals/SettingsModal';
-import { SupportModal } from './components/modals/SupportModal';
+// Login/Signup Component
+function LoginScreen() {
+  const [isSignup, setIsSignup] = useState(true)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, provider)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password.length < 6) {
+      setError('Password must be 6+ characters')
+      return
+    }
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, email, password)
+      await updateProfile(userCred.user, { displayName: name })
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'black', color: 'white',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+    }}>
+      <div style={{maxWidth: '400px', width: '100%'}}>
+        <h1 style={{textAlign: 'center', fontSize: '36px', marginBottom: '30px', fontWeight: 'bold'}}>
+          Z-VIDEOS
+        </h1>
+
+        <button
+          onClick={handleGoogleLogin}
+          style={{
+            width: '100%', padding: '14px', fontSize: '16px',
+            background: '#ea580c', border: 'none', color: 'white',
+            borderRadius: '8px', cursor: 'pointer', marginBottom: '20px'
+          }}
+        >
+          🚀 Continue with Gmail
+        </button>
+
+        <p style={{textAlign: 'center', margin: '20px 0', opacity: 0.5}}>OR</p>
+
+        <form onSubmit={isSignup? handleEmailSignup : handleEmailLogin}>
+          {isSignup && (
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              style={{
+                width: '100%', padding: '12px', marginBottom: '12px',
+                background: '#111', border: '1px solid #333', color: 'white',
+                borderRadius: '8px', boxSizing: 'border-box'
+              }}
+            />
+          )}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{
+              width: '100%', padding: '12px', marginBottom: '12px',
+              background: '#111', border: '1px solid #333', color: 'white',
+              borderRadius: '8px', boxSizing: 'border-box'
+            }}
+          />
+          <input
+            type="password"
+            placeholder="Password - 6+ characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{
+              width: '100%', padding: '12px', marginBottom: '12px',
+              background: '#111', border: '1px solid #333', color: 'white',
+              borderRadius: '8px', boxSizing: 'border-box'
+            }}
+          />
+          {error && <p style={{color: '#ef4444', fontSize: '14px', marginBottom: '10px'}}>{error}</p>}
+          <button
+            type="submit"
+            style={{
+              width: '100%', padding: '14px', fontSize: '16px',
+              background: 'white', border: 'none', color: 'black',
+              borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
+            }}
+          >
+            {isSignup? 'Create Account' : 'Login'}
+          </button>
+        </form>
+
+        <p style={{textAlign: 'center', marginTop: '20px', fontSize: '14px'}}>
+          {isSignup? 'Already have account? ' : "Don't have account? "}
+          <span
+            onClick={() => {setIsSignup(!isSignup); setError('')}}
+            style={{color: '#ea580c', cursor: 'pointer', textDecoration: 'underline'}}
+          >
+            {isSignup? 'Login' : 'Sign Up'}
+          </span>
+        </p>
+        <p style={{textAlign: 'center', marginTop: '30px', fontSize: '12px', opacity: 0.4}}>
+          Once you sign up, you'll stay logged in automatically
+        </p>
+      </div>
+    </div>
+  )
+}
 
 function Dashboard() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -69,45 +215,29 @@ function Dashboard() {
   const [likedVideoIds, setLikedVideoIds] = useState<string[]>([]);
 
   useEffect(() => {
-    // Auto-approve monetization for everyone
     const autoApprove = async () => {
-      if (user && profile && profile.monetizationStatus !== 'approved') {
+      if (user && profile && profile.monetizationStatus!== 'approved') {
         try {
-          await updateDoc(doc(db, 'users', user.uid), {
-            monetizationStatus: 'approved'
-          });
-        } catch (e) {
-          console.error(e);
-        }
+          await updateDoc(doc(db, 'users', user.uid), { monetizationStatus: 'approved' });
+        } catch (e) { console.error(e); }
       }
     };
     autoApprove();
   }, [user, profile]);
 
   useEffect(() => {
-    if (!user) {
-      setLikedVideoIds([]);
-      return;
-    }
+    if (!user) { setLikedVideoIds([]); return; }
     const ikQuery = query(collection(db, 'interactions'), where('userId', '==', user.uid), where('type', '==', 'like'));
     const unsubscribe = onSnapshot(ikQuery, (snapshot) => {
       setLikedVideoIds(snapshot.docs.map(doc => doc.data().videoId));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'interactions');
-    });
+    }, (error) => { handleFirestoreError(error, OperationType.LIST, 'interactions'); });
     return unsubscribe;
   }, [user]);
 
   useEffect(() => {
     const handleNavCreator = () => setView('creator');
-    const handleNavHome = () => {
-      setView('home');
-      setCategory('home');
-    };
-    const handleNavProfile = (e: any) => {
-      setView('profile');
-      setSelectedProfileId(e.detail.uid);
-    };
+    const handleNavHome = () => { setView('home'); setCategory('home'); };
+    const handleNavProfile = (e: any) => { setView('profile'); setSelectedProfileId(e.detail.uid); };
     window.addEventListener('nav-creator', handleNavCreator);
     window.addEventListener('nav-home', handleNavHome);
     window.addEventListener('nav-profile', handleNavProfile as any);
@@ -121,37 +251,29 @@ function Dashboard() {
   useEffect(() => {
     const q = query(collection(db, 'videos'), orderBy('createdAt', 'desc'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const vids = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VideoData));
+      const vids = snapshot.docs.map(doc => ({ id: doc.id,...doc.data() } as VideoData));
       setVideos(vids);
       setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'videos');
-    });
+    }, (error) => { handleFirestoreError(error, OperationType.LIST, 'videos'); });
     return unsubscribe;
   }, []);
 
   const filteredVideos = videos.filter(v => {
-    const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         v.ownerName?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.ownerName?.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
-
-    if (category === 'trending') return true; // Will sort instead
-    if (category === 'creators') return true; 
+    if (category === 'trending') return true;
+    if (category === 'creators') return true;
     if (category === 'history') {
       const history = JSON.parse(localStorage.getItem('video_history') || '[]');
       return history.includes(v.id);
     }
     if (category === 'liked') return likedVideoIds.includes(v.id);
-    
     return true;
   });
 
   const displayVideos = [...filteredVideos].sort((a, b) => {
-    if (category === 'trending') {
-      return (b.views || 0) - (a.views || 0);
-    }
-    return 0; // Keep original order (desc by createdAt)
+    if (category === 'trending') return (b.views || 0) - (a.views || 0);
+    return 0;
   });
 
   if (authLoading) {
@@ -163,154 +285,23 @@ function Dashboard() {
     );
   }
 
+  // লগইন না থাকলে LoginScreen দেখাও
+  if (!user) {
+    return (
+      <>
+        <AgeGate />
+        <LoginScreen />
+      </>
+    );
+  }
+
   if (view === 'creator') {
     return <CreatorDashboard onBack={() => setView('home')} />;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-orange-600/30">
-      <Navbar 
-        onUploadClick={() => setIsUploadOpen(true)} 
-        onSearch={setSearchQuery} 
-        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        onSettingsClick={() => setIsSettingsOpen(true)}
-        onCategoryChange={(c) => {
-          setView('home');
-          setCategory(c);
-        }}
-      />
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)}
-        onNavigate={(v, pid) => {
-          setView(v);
-          if (v === 'home') setCategory('home');
-          if (v === 'profile' && pid) setSelectedProfileId(pid);
-        }}
-        onCategoryChange={(c) => {
-          setView('home');
-          setCategory(c);
-        }}
-        onSettingsClick={() => setIsSettingsOpen(true)}
-        onSupportClick={() => setIsSupportOpen(true)}
-        currentView={view}
-        currentCategory={category}
-        userId={user?.uid}
-      />
-      
-      <main className="lg:ml-64 pt-24 px-4 sm:px-8 pb-12">
-        <header className="mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-gradient-to-br from-orange-600/10 to-transparent p-8 rounded-3xl border border-orange-600/20 backdrop-blur-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-150 transition-transform duration-1000">
-              <Zap className="w-64 h-64 text-orange-600" />
-            </div>
-            <div className="relative z-10">
-              <h2 className="text-4xl font-extrabold tracking-tight mb-2 text-white">
-                Z-VIDEOS is <span className="text-orange-600">waiting.</span>
-              </h2>
-              <p className="text-white/40 max-w-md font-medium leading-relaxed">
-                Discover exclusive content from the world's most daring creators. Secure, premium, and strictly for those who know what they want.
-              </p>
-
-            </div>
-            <div className="relative z-10 flex gap-4">
-              <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/5 min-w-[140px] text-center">
-                <p className="text-2xl font-black text-white">{videos.length}</p>
-                <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-1">Live Clips</p>
-              </div>
-              <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/5 min-w-[140px] text-center">
-                <p className="text-2xl font-black text-white">
-                  {videos.reduce((acc, v) => acc + (v.views || 0), 0).toLocaleString()}
-                </p>
-                <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-1">Global Views</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12">
-            {[1,2,3,4,5,6,7,8].map(i => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-video bg-white/5 rounded-2xl mb-4" />
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/5" />
-                  <div className="space-y-2 flex-1 pt-1">
-                    <div className="h-4 w-full bg-white/5 rounded" />
-                    <div className="h-3 w-1/2 bg-white/5 rounded" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : view === 'profile' && selectedProfileId ? (
-          <ProfileView 
-            userId={selectedProfileId} 
-            onBack={() => setView('home')} 
-            onVideoClick={(id) => setSelectedVideoId(id)}
-          />
-        ) : displayVideos.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12">
-            <AnimatePresence>
-              {displayVideos.map((video) => (
-                <VideoCard 
-                  key={video.id} 
-                  video={video} 
-                  onClick={() => {
-                    setSelectedVideoId(video.id);
-                    const history = JSON.parse(localStorage.getItem('video_history') || '[]');
-                    if (!history.includes(video.id)) {
-                      localStorage.setItem('video_history', JSON.stringify([video.id, ...history].slice(0, 50)));
-                    }
-                  }}
-                  onCreatorClick={(uid) => {
-                    setSelectedProfileId(uid);
-                    setView('profile');
-                  }}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-              <ShieldCheck className="w-10 h-10 text-white/10" />
-            </div>
-            <h3 className="text-xl font-bold text-white">No content found</h3>
-            <p className="text-white/40 mt-2 max-w-xs">Try adjusting your search or upload your own 18+ content to start the vault.</p>
-          </div>
-        )}
-      </main>
-
-      <AnimatePresence>
-        {isUploadOpen && (
-          <VideoUpload 
-            isOpen={isUploadOpen} 
-            onClose={() => setIsUploadOpen(false)} 
-            onComplete={() => {}} 
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {selectedVideoId && (
-          <VideoPlayer 
-            videoId={selectedVideoId} 
-            onClose={() => setSelectedVideoId(null)} 
-          />
-        )}
-      </AnimatePresence>
-
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
-    </div>
-  );
-}
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <Dashboard />
-    </AuthProvider>
-  );
-}
+    <>
+      <AgeGate />
+      <div className="min-h-screen bg-black text-white font-sans selection:bg-orange-600/30">
+        <Navbar onUploadClick={() => setIsUploadOpen(true)} onSearch={setSearchQuery} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} onSettingsClick={() => setIsSettingsOpen(true)} onCategoryChange={(c) => { setView('home'); setCategory(c); }} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onNavigate={(v, pid) => { setView(v); if (v === 'home') setCategory('home'); if (v === 'profile' && pid) setSelectedProfileId(pid); }} onCategoryChange={(c) => { setView('home'); setCategory(c); }} onSettingsClick={() => setIsSettingsOpen(true)} onSupportClick={() => setIsSupportOpen(true)} currentView={view} currentCategory={category} user
