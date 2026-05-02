@@ -1,5 +1,5 @@
 {
-  "apiKey": "AIzaSyD7EyNhaYnBmfRtmGuxOD4TWvxdmio7gjc",
+  "apiKey": "AIzaSyD7EyNhaYnBmfRtmGuxOD4TWvxdmiooo7gjc",
   "authDomain": "zvideo-7809f.firebaseapp.com",
   "projectId": "zvideo-7809f",
   "storageBucket": "zvideo-7809f.firebasestorage.app",
@@ -15,7 +15,7 @@ import { getAnalytics } from "firebase/analytics";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyD7EyNhaYnBmfRtmGuxOD4TWvxdmio7gjc",
+  apiKey: "AIzaSyD7EyNhaYnBmfRtmGuxOD4TWvxdmiooo7gjc",
   authDomain: "zvideo-7809f.firebaseapp.com",
   projectId: "zvideo-7809f",
   storageBucket: "zvideo-7809f.firebasestorage.app",
