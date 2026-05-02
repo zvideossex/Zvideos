@@ -1,0 +1,29 @@
+{
+  "apiKey": "AIzaSyD7EyNhaYnBmfRtmGuxOD4TWvxdmio7gjc",
+  "authDomain": "zvideo-7809f.firebaseapp.com",
+  "projectId": "zvideo-7809f",
+  "storageBucket": "zvideo-7809f.firebasestorage.app",
+  "messagingSenderId": "444454377163",
+  "appId": "1:444454377163:web:548b5c9ae4d4dc142ead4e"
+}
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD7EyNhaYnBmfRtmGuxOD4TWvxdmio7gjc",
+  authDomain: "zvideo-7809f.firebaseapp.com",
+  projectId: "zvideo-7809f",
+  storageBucket: "zvideo-7809f.firebasestorage.app",
+  messagingSenderId: "444454377163",
+  appId: "1:444454377163:web:548d5c9ae4d4dc142ead4e",
+  measurementId: "G-1GPYZQZH6B"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
